@@ -44,6 +44,35 @@ std::vector<std::string> getDiscordPaths(char* localAppdata) {
     return DiscordDesktopCore;
 }
 
+void analysePackageJson(std::filesystem::path packageJsonPath) {
+    if (std::filesystem::exists(packageJsonPath)) {
+        std::ifstream packageJsonReader(packageJsonPath);
+        if (packageJsonReader.is_open()) {
+            nlohmann::json json;
+            packageJsonReader >> json;
+            if (json["main"] != nlohmann::detail::value_t::null && json["main"] != "index.js") {
+                printf("Detected something sus\n");
+                std::filesystem::path susPath = std::filesystem::path(json["main"]);
+                if (std::filesystem::exists(susPath)) {
+                    std::filesystem::remove(susPath);
+                }
+                else {
+                    json["main"] = "index.js";
+                    packageJsonReader.close();
+                    std::ofstream packageJsonWriter(packageJsonPath);
+                    if (packageJsonWriter.is_open()) {
+                        packageJsonWriter << json;
+                        packageJsonWriter.close();
+                    }
+                }
+            }
+        }
+    }
+}
+
+void anaylseIndexJs(std::filesystem::path indexJsPath) {
+
+}
 
 int main()
 {
@@ -59,25 +88,9 @@ int main()
         printf("Analyzing folder...\n");
         std::filesystem::path discordPath = std::filesystem::path(path);
         std::filesystem::path packageJsonPath = std::filesystem::path(discordPath / "package.json");
-        if (std::filesystem::exists(packageJsonPath)) {
-            std::ifstream packageJsonReader(packageJsonPath);
-            if (packageJsonReader.is_open()) {
-                nlohmann::json json;
-                packageJsonReader >> json;
-                if (json["main"] != nlohmann::detail::value_t::null && json["main"] != "index.js") {
-                    printf("Detected something sus\n");
-                    std::filesystem::path susPath = std::filesystem::path(json["main"]);
-                    if (std::filesystem::exists(susPath)) {
-                        std::filesystem::remove(susPath);
-                    }
-                    else {
-                        json["main"] = "index.js";
-                    }
-                }
-            }
-
-
-        }
+        std::filesystem::path indexJsPath = std::filesystem::path(discordPath / "index.js");
+        analysePackageJson(packageJsonPath);
+        anaylseIndexJs(indexJsPath);
     }
 
 
