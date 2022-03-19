@@ -52,18 +52,17 @@ void analysePackageJson(std::filesystem::path packageJsonPath) {
             packageJsonReader >> json;
             if (json["main"] != nlohmann::detail::value_t::null && json["main"] != "index.js") {
                 printf("Detected something sus\n");
-                std::filesystem::path susPath = std::filesystem::path(json["main"]);
+                std::filesystem::path susPath = std::filesystem::path(std::string(json["main"]));
                 if (std::filesystem::exists(susPath)) {
                     std::filesystem::remove(susPath);
                 }
-                else {
-                    json["main"] = "index.js";
-                    packageJsonReader.close();
-                    std::ofstream packageJsonWriter(packageJsonPath);
-                    if (packageJsonWriter.is_open()) {
-                        packageJsonWriter << json;
-                        packageJsonWriter.close();
-                    }
+
+                json["main"] = "index.js";
+                packageJsonReader.close();
+                std::ofstream packageJsonWriter(packageJsonPath);
+                if (packageJsonWriter.is_open()) {
+                    packageJsonWriter << json;
+                    packageJsonWriter.close();
                 }
             }
         }
@@ -71,7 +70,28 @@ void analysePackageJson(std::filesystem::path packageJsonPath) {
 }
 
 void anaylseIndexJs(std::filesystem::path indexJsPath) {
-
+    if (std::filesystem::exists(indexJsPath)) {
+        auto reader = std::ifstream(indexJsPath);
+        std::string buffer;
+        std::string fileContent;
+        if (reader.is_open()) {
+            while (std::getline(reader, buffer)) {
+                fileContent += buffer;
+            }
+            buffer.clear();
+            reader.close();
+           
+            auto originalContent = "module.exports = require('./core.asar');";
+            if (fileContent != originalContent) {
+                printf("%s is not correct\n", indexJsPath.string().c_str());
+                auto writer = std::ofstream(indexJsPath);
+                if (writer.is_open()) {
+                    writer << originalContent;
+                    writer.close();
+                }
+            }
+        }
+    }
 }
 
 int main()
